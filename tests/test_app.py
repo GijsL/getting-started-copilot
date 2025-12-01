@@ -178,6 +178,30 @@ class TestSignup:
         assert response.status_code == 404
         data = response.json()
         assert "not found" in data["detail"].lower()
+    
+    def test_signup_activity_at_capacity(self, client, reset_activities):
+        """Test that signup is rejected when activity is at maximum capacity"""
+        activity = "Chess Club"
+        
+        # Chess Club has max_participants: 12 and starts with 2 participants
+        # Fill up the remaining spots
+        for i in range(10):
+            response = client.post(
+                f"/activities/{activity}/signup",
+                params={"email": f"student{i}@mergington.edu"}
+            )
+            assert response.status_code == 200
+        
+        # Activity should now be at capacity (12 participants)
+        # Try to sign up one more participant
+        response = client.post(
+            f"/activities/{activity}/signup",
+            params={"email": "overflow@mergington.edu"}
+        )
+        
+        assert response.status_code == 400
+        data = response.json()
+        assert "capacity" in data["detail"].lower()
 
 
 class TestUnregister:
